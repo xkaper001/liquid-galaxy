@@ -37,8 +37,9 @@ if [ `getconf LONG_BIT` = "64" ]; then
 fi
 
 EARTH_FOLDER="/opt/google/earth/pro/"
-NETWORK_INTERFACE=$(/sbin/route -n | grep "^0.0.0.0" | rev | cut -d ' ' -z -f1 | rev)
-NETWORK_INTERFACE_MAC=$(/sbin/ifconfig | grep $NETWORK_INTERFACE | awk '{print $5}')
+NETWORK_INTERFACE=$(ip route show default | awk '/default/ {print $5; exit}')
+NETWORK_INTERFACE_MAC=$(ip link show "$NETWORK_INTERFACE" \
+    | awk '/link\/ether/ {print $2}')
 SSH_PASSPHRASE=""
 USER_PATH=$(pwd)/$GIT_FOLDER_NAME
 
@@ -52,7 +53,9 @@ MACHINE_NAME="lg"$MACHINE_ID
 
 if [ $MACHINE_ID == "1" ]; then
 	MASTER=true
-	MASTER_IP=$(/sbin/ifconfig | grep --after-context=1 $NETWORK_INTERFACE | awk -F " Bcast" '{print $1}' | awk -F "inet addr:" '{print $2}')
+	MASTER_IP=$(ip -4 addr show "$NETWORK_INTERFACE" \
+    	| awk '/inet / {print $2}' \
+        | cut -d/ -f1)
     echo "Save the IP ADDRESS of this machine: $MASTER_IP"
 	read -p "Press any key to continue"
 else
